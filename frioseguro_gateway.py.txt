@@ -1,0 +1,52 @@
+import time
+import requests
+
+# Configurações da Nuvem (ThingSpeak)
+THINGSPEAK_API_KEY = "COLE_SUA_WRITE_API_KEY_AQUI"
+THINGSPEAK_URL = "https://api.thingspeak.com/update"
+
+# Regra de Negócio (Produto Vendável)
+LIMITE_TEMPERATURA = -10.0
+
+def enviar_para_nuvem(temp, porta):
+    payload = {
+        'api_key': THINGSPEAK_API_KEY,
+        'field1': temp,
+        'field2': porta
+    }
+    try:
+        resposta = requests.get(THINGSPEAK_URL, params=payload)
+        if resposta.status_code == 200:
+            print(f"[CLOUD OK] Dados enviados -> Temp: {temp}°C | Porta: {'ABERTA' if porta == 1 else 'Fechada'}")
+        else:
+            print(f"[ERRO CLOUD] Código: {resposta.status_code}")
+    except Exception as e:
+        print(f"[FALHA DE CONEXÃO] {e}")
+
+def verificar_alertas(temp, porta):
+    if temp > LIMITE_TEMPERATURA:
+        print(f"🚨 ALERTA CRÍTICO: Freezer esquentando! Temperatura atual: {temp}°C (Limite: {LIMITE_TEMPERATURA}°C)")
+        # Aqui entra a integração futura com API de WhatsApp/Telegram para o cliente
+    if porta == 1:
+        print("⚠️ ALERTA OPERACIONAL: A porta do freezer está ABERTA!")
+
+print("=== GATEWAY PYTHON - FRIOSEGURO IOT INICIADO ===")
+print("Cole a linha gerada pelo Monitor Serial do Wokwi (ex: -15.4,0) ou digite 'sair':\n")
+
+while True:
+    # Quando tiver a placa física, trocaremos este input() por: serial.readline()
+    dado_serial = input("Leitura Serial (temp,porta): ").strip()
+    
+    if dado_serial.lower() == 'sair':
+        break
+        
+    try:
+        partes = dado_serial.split(",")
+        temperatura = float(partes[0])
+        status_porta = int(partes[1])
+        
+        verificar_alertas(temperatura, status_porta)
+        enviar_para_nuvem(temperatura, status_porta)
+        
+    except (ValueError, IndexError):
+        print("Formato inválido! Digite no padrão: temperatura,porta (Exemplo: -12.5,0)")
