@@ -1,0 +1,11 @@
+timestamp,temperatura_c,umidade_pct,status_operacional,acao_tomada
+2026-11-24 08:00:00,4.2,57,NORMAL,Nenhuma
+2026-11-24 10:00:00,4.5,58,NORMAL,Nenhuma
+2026-11-24 12:00:00,5.1,60,NORMAL,Nenhuma
+2026-11-24 14:00:00,6.8,62,NORMAL,Monitoramento preventivo
+2026-11-24 14:15:00,8.9,65,CRITICO,Alerta sonoro ativado + Log enviado ao Gateway
+2026-11-24 14:20:00,9.4,66,CRITICO,Manutencao acionada - Porta entreaberta identificada
+2026-11-24 14:35:00,6.2,61,NORMAL,Temperatura normalizada - Alerta encerrado
+2026-11-24 18:00:00,4.4,58,NORMAL,Nenhuma
+2026-11-24 22:00:00,4.1,56,NORMAL,Nenhuma
+2026-11-25 06:00:00,4.3,57,NORMAL,Nenhuma
