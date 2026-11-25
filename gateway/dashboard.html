@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FrioSeguro IoT | Monitoramento Térmico</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background-color: #090d16; color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    .card { background-color: #111827; border: 1px solid #1f2937; }
+    .pulse-red { animation: pulse 1.5s infinite; }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+    }
+  </style>
+</head>
+<body class="min-h-screen p-6">
+  <div class="max-w-6xl mx-auto space-y-6">
+    
+    <!-- Cabeçalho -->
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center card p-5 rounded-xl gap-4">
+      <div>
+        <div class="flex items-center gap-3">
+          <span class="h-3 w-3 rounded-full bg-emerald-500"></span>
+          <h1 class="text-2xl font-bold tracking-tight text-white">FrioSeguro <span class="text-cyan-400">IoT</span></h1>
+          <span class="text-xs bg-slate-800 text-slate-300 px-2.5 py-1 rounded-md border border-slate-700">v2.1 Production</span>
+        </div>
+        <p class="text-sm text-slate-400 mt-1">Telemetria Preditiva de Câmaras Frigoríficas & Insumos Termolábeis</p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="simularFalha()" id="btnFalha" class="bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/40 px-4 py-2 rounded-lg text-sm font-medium transition">
+          Simular Falha Térmica
+        </button>
+        <button onclick="normalizarSistema()" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/40 px-4 py-2 rounded-lg text-sm font-medium transition">
+          Normalizar Câmara
+        </button>
+      </div>
+    </header>
+
+    <!-- Cards de Métricas -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div id="cardTemp" class="card p-5 rounded-xl transition-all">
+        <p class="text-xs uppercase tracking-wider text-slate-400">Temperatura Atual</p>
+        <div class="flex items-baseline gap-2 mt-2">
+          <span id="tempVal" class="text-4xl font-bold text-cyan-400">4.6</span>
+          <span class="text-lg text-slate-400">°C</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">Faixa ideal: 2.0°C a 8.0°C</p>
+      </div>
+
+      <div class="card p-5 rounded-xl">
+        <p class="text-xs uppercase tracking-wider text-slate-400">Umidade Relativa</p>
+        <div class="flex items-baseline gap-2 mt-2">
+          <span id="umidVal" class="text-4xl font-bold text-indigo-400">58</span>
+          <span class="text-lg text-slate-400">%</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">Sensor DHT22 Calibrado</p>
+      </div>
+
+      <div class="card p-5 rounded-xl">
+        <p class="text-xs uppercase tracking-wider text-slate-400">Status Operacional</p>
+        <div class="mt-3">
+          <span id="statusBadge" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+            ● OPERAÇÃO NORMAL
+          </span>
+        </div>
+        <p id="buzzerStatus" class="text-xs text-slate-500 mt-3">Atuador Sonoro: Desativado</p>
+      </div>
+
+      <div class="card p-5 rounded-xl">
+        <p class="text-xs uppercase tracking-wider text-slate-400">Uptime / Amostras</p>
+        <div class="flex items-baseline gap-2 mt-2">
+          <span id="amostrasVal" class="text-4xl font-bold text-slate-200">142</span>
+          <span class="text-sm text-slate-400">leituras</span>
+        </div>
+        <p class="text-xs text-emerald-400 mt-2">Gateway Serial: Conectado (9600 bps)</p>
+      </div>
+    </div>
+
+    <!-- Gráfico e Tabela de Logs -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="card p-5 rounded-xl lg:col-span-2">
+        <h2 class="text-base font-semibold text-white mb-4">Curva Térmica em Tempo Real (°C)</h2>
+        <canvas id="tempChart" height="120"></canvas>
+      </div>
+
+      <div class="card p-5 rounded-xl flex flex-col">
+        <h2 class="text-base font-semibold text-white mb-3">Log de Eventos do Gateway</h2>
+        <div id="logContainer" class="flex-1 overflow-y-auto space-y-2 max-h-64 text-xs font-mono pr-1">
+          <!-- Logs inseridos via JS -->
+        </div>
+      </div>
+    </div>
+
+    <footer class="text-center text-xs text-slate-500 pt-2">
+      Desenvolvido por Nalbert Alves de Araújo & Arthur Felipe • Faculdade Estácio de Teresina
+    </footer>
+  </div>
+
+  <script>
+    let modoFalha = false;
+    let tempAtual = 4.6;
+    let amostras = 142;
+
+    const ctx = document.getElementById('tempChart').getContext('2d');
+    const labels = ['14:50', '14:52', '14:54', '14:56', '14:58', '15:00'];
+    const dataPoints = [4.4, 4.5, 4.7, 4.6, 4.5, 4.6];
+
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Temperatura (°C)',
+          data: dataPoints,
+          borderColor: '#22d3ee',
+          backgroundColor: 'rgba(34, 211, 238, 0.1)',
+          borderWidth: 2,
+          tension: 0.35,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { min: 0, max: 16, grid: { color: '#1f2937' }, ticks: { color: '#94a3b8' } },
+          x: { grid: { color: '#1f2937' }, ticks: { color: '#94a3b8' } }
+        }
+      }
+    });
+
+    function adicionarLog(msg, critico = false) {
+      const container = document.getElementById('logContainer');
+      const hora = new Date().toLocaleTimeString('pt-BR');
+      const div = document.createElement('div');
+      div.className = critico 
+        ? 'p-2 rounded bg-rose-950/60 border border-rose-800/50 text-rose-300' 
+        : 'p-2 rounded bg-slate-800/60 border border-slate-700/50 text-slate-300';
+      div.innerText = `[${hora}] ${msg}`;
+      container.prepend(div);
+      if (container.children.length > 12) container.lastChild.remove();
+    }
+
+    function simularFalha() {
+      modoFalha = true;
+      adicionarLog('ALERTA: Perda de eficiência no compressor detectada!', true);
+    }
+
+    function normalizarSistema() {
+      modoFalha = false;
+      tempAtual = 4.8;
+      adicionarLog('INFO: Refrigeração restabelecida. Temperatura estabilizando.');
+    }
+
+    setInterval(() => {
+      amostras++;
+      document.getElementById('amostrasVal').innerText = amostras;
+
+      if (modoFalha) {
+        tempAtual = Math.min(14.5, tempAtual + (Math.random() * 0.9 + 0.4));
+      } else {
+        tempAtual = +(4.5 + (Math.random() * 0.6 - 0.3)).toFixed(1);
+      }
+
+      const tempFormatada = tempAtual.toFixed(1);
+      const umid = Math.floor(56 + Math.random() * 5);
+      document.getElementById('tempVal').innerText = tempFormatada;
+      document.getElementById('umidVal').innerText = umid;
+
+      const critico = tempAtual > 8.0 || tempAtual < 2.0;
+      const card = document.getElementById('cardTemp');
+      const badge = document.getElementById('statusBadge');
+      const buzzer = document.getElementById('buzzerStatus');
+      const tempEl = document.getElementById('tempVal');
+
+      if (critico) {
+        card.classList.add('border-rose-500', 'pulse-red');
+        tempEl.className = 'text-4xl font-bold text-rose-500';
+        badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/40';
+        badge.innerText = '▲ ALERTA CRÍTICO (>8°C)';
+        buzzer.innerText = 'Atuador Sonoro: ATIVO (1000Hz)';
+        chart.data.datasets[0].borderColor = '#f43f5e';
+        adicionarLog(`CRÍTICO: Temp=${tempFormatada}°C | Umid=${umid}% | Buzzer ON`, true);
+      } else {
+        card.classList.remove('border-rose-500', 'pulse-red');
+        tempEl.className = 'text-4xl font-bold text-cyan-400';
+        badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30';
+        badge.innerText = '● OPERAÇÃO NORMAL';
+        buzzer.innerText = 'Atuador Sonoro: Desativado';
+        chart.data.datasets[0].borderColor = '#22d3ee';
+        adicionarLog(`OK: Temp=${tempFormatada}°C | Umid=${umid}%`);
+      }
+
+      const agora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      chart.data.labels.push(agora);
+      chart.data.datasets[0].data.push(tempFormatada);
+      if (chart.data.labels.length > 10) {
+        chart.data.labels.shift();
+        chart.data.datasets[0].data.shift();
+      }
+      chart.update();
+    }, 2500);
+
+    adicionarLog('Gateway inicializado. Lendo porta serial...');
+  </script>
+</body>
+</html>
