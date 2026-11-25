@@ -1,19 +1,36 @@
-# ❄️ FrioSeguro IoT
+# ❄️ FrioSeguro IoT — Sistema Inteligente de Monitoramento Térmico
 
-Sistema inteligente de monitoramento térmico e alerta preventivo para conservação de insumos refrigerados em pequenos comércios locais.
+![Status](https://img.shields.io/badge/Status-Conclu%C3%ADdo-brightgreen)
+![Hardware](https://img.shields.io/badge/Hardware-Arduino%20Uno%20%2B%20DHT22-blue)
+![Interface](https://img.shields.io/badge/Dashboard-Dark%20Mode%20Web-06b6d4)
+![Licença](https://img.shields.io/badge/Licen%C3%A7a-MIT-lightgrey)
 
-## 📋 Sobre o Projeto
-Este projeto foi desenvolvido como atividade de extensão curricular para a disciplina **Aplicações de Cloud, IoT e Indústria 4.0 em Python (ARA0058)**[cite: 1]. A solução visa prevenir prejuízos financeiros e riscos sanitários causados por falhas de refrigeração ou portas de freezers deixadas abertas, oferecendo uma alternativa de baixo custo e fácil visualização remota para microempreendedores[cite: 14, 15].
+O **FrioSeguro IoT** é uma solução de telemetria e alerta preventivo projetada para proteger insumos refrigerados e medicamentos termolábeis contra falhas de climatização. O sistema combina monitoramento embarcado contínuo com sinalização local (visor LCD, LEDs e alarme sonoro) e um painel web de supervisão em tempo real.
 
-## ⚙️ Arquitetura e Tecnologias Utilizadas
-* **Hardware e Simulação (Arduino Uno / Wokwi):** Leitura contínua de temperatura (sensor DHT22) e status de abertura de porta (chave magnética simulada), com alarme sonoro local imediato (Buzzer) caso a temperatura ultrapasse **-10 °C**[cite: 15].
-* **Middleware / Gateway (Python 3):** Script responsável por capturar os dados via comunicação Serial, aplicar regras de negócio para detecção de anomalias e enviar pacotes via protocolo HTTP REST[cite: 15].
-* **Cloud IoT (ThingSpeak):** Armazenamento em nuvem e exibição de gráficos em tempo real para acompanhamento remoto pelo comerciante[cite: 15].
+---
 
-## 📂 Estrutura do Repositório
-* `PROJETO DE EXTENSÃO.zip` — Arquivos da montagem eletrônica (`diagram.json`) e código-fonte do microcontrolador (`sketch.ino`) para simulação no Wokwi[cite: 19].
-* `frioseguro_gateway.py` — Script em Python que realiza a ponte entre os dados do Arduino e a nuvem ThingSpeak[cite: 19].
-* `Relatorio_Extensao_FrioSeguro_IoT-v2.docx` — Roteiro de Extensão completo com diagnóstico, planejamento, detalhamento técnico e avaliação de resultados[cite: 15, 19].
+## 🎯 Problema & Impacto Comercial
+Pequenos comércios, farmácias e clínicas perdem estoques inteiros quando freezers ou câmaras frias falham fora do horário comercial. O **FrioSeguro IoT** elimina a dependência de verificação manual ao detectar desvios térmicos em menos de **5 segundos**, reduzindo perdas financeiras e garantindo conformidade sanitária.
 
-## 👨‍💻 Autor
-* **Nalbert Alves de Araújo** — Matrícula: `202303700628`[cite: 15]28
+---
+
+## 📊 Parâmetros Operacionais
+
+| Faixa de Temperatura | Estado do Sistema | Sinalização Local (Hardware) | Ação no Gateway |
+| :--- | :--- | :--- | :--- |
+| **2.0°C a 8.0°C** | 🟢 **NORMAL** | LED Verde aceso / LCD exibe `NORMAL` | Registro contínuo no log CSV |
+| **< 2.0°C ou > 8.0°C** | 🔴 **CRÍTICO** | LED Vermelho + Buzzer 1kHz + LCD `ALERTA!` | Alerta visual pulsante no Dashboard |
+
+---
+
+## 🏗️ Arquitetura do Projeto
+
+```text
+FrioSeguro-IoT/
+├── firmware/
+│   └── frioseguro.ino             # Código C++ (Arduino Uno + DHT22 + LCD I2C + Buzzer)
+├── gateway/
+│   └── dashboard.html             # Painel de telemetria Dark-Mode com gráficos em tempo real
+├── dados/
+│   └── historico_temperaturas.csv # Base histórica de auditoria térmica (24h)
+└── README.md                      # Documentação técnica do projeto
